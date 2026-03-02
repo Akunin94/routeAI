@@ -4,7 +4,7 @@ import vuetify from 'vite-plugin-vuetify'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd())
+  const env = loadEnv(mode, process.cwd(), '')
 
   return {
     plugins: [
@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
           rewrite: () => '',
           configure: (proxy) => {
             proxy.on('proxyReq', (proxyReq) => {
-              proxyReq.setHeader('x-api-key', env.VITE_CLAUDE_API_KEY ?? '')
+              proxyReq.setHeader('x-api-key', env.CLAUDE_API_KEY ?? '')
               proxyReq.setHeader('anthropic-version', '2023-06-01')
             })
           },
