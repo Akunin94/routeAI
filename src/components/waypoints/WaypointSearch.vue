@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { usePlacesAutocomplete } from '@/composables/usePlacesAutocomplete'
 import type { PlaceResult } from '@/types/maps'
 
@@ -14,6 +14,7 @@ const { selectedPlace, initialize, reset } = usePlacesAutocomplete()
 let cleanup: (() => void) | null = null
 
 onMounted(async () => {
+  await nextTick()
   const input = wrapperRef.value?.querySelector('input')
   if (!input) return
   cleanup = await initialize(input as HTMLInputElement)

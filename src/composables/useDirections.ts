@@ -76,6 +76,7 @@ export function useDirections(mapInstance: Ref<google.maps.Map | null>) {
       }
 
       routeStore.setActiveRoute(route)
+      routeStore.setCalculating(false)
 
       const bounds = new google.maps.LatLngBounds()
       waypointStore.waypoints.forEach((wp) => bounds.extend(wp.location))

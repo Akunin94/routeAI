@@ -1,9 +1,9 @@
-import { ref, onMounted } from 'vue'
+import { ref, shallowRef, onMounted } from 'vue'
 import type { Ref } from 'vue'
 import { loadGoogleMaps } from '@/services/googleMapsService'
 
 export function useGoogleMaps(mapContainerRef: Ref<HTMLElement | null>) {
-  const mapInstance = ref<google.maps.Map | null>(null)
+  const mapInstance = shallowRef<google.maps.Map | null>(null)
   const isLoaded = ref(false)
   const loadError = ref<string | null>(null)
 
