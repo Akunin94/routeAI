@@ -1,1 +1,2 @@
-<template><!-- Phase 7 will fill this component --></template>
+<!-- Route rendering is handled by DirectionsRenderer inside useDirections composable -->
+<template><!-- renderless --></template>
