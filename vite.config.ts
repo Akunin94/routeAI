@@ -19,11 +19,12 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api/claude': {
-          target: 'https://api.anthropic.com/v1/messages',
+          target: 'https://api.anthropic.com',
           changeOrigin: true,
-          rewrite: () => '',
+          rewrite: () => '/v1/messages',
           configure: (proxy) => {
             proxy.on('proxyReq', (proxyReq) => {
+              proxyReq.removeHeader('origin')
               proxyReq.setHeader('x-api-key', env.CLAUDE_API_KEY ?? '')
               proxyReq.setHeader('anthropic-version', '2023-06-01')
             })
