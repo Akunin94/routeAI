@@ -35,4 +35,12 @@ const htmlContent = computed(() => {
 .message-bubble {
   word-break: break-word;
 }
+
+.message-bubble :deep(pre) {
+  margin-top: 12px;
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-x: hidden;
+}
 </style>
