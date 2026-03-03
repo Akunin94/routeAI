@@ -10,6 +10,6 @@ export interface ChatMessage {
 export interface AiSuggestion {
   type: 'reorder' | 'add_stop' | 'avoid_area' | 'time_suggestion' | 'general'
   summary: string
-  proposedOrder?: string[]   // waypoint IDs в новом порядке
+  proposedOrder?: string[]   // waypoint IDs in new order
   additionalInfo?: string
 }
