@@ -6,6 +6,7 @@ const STORAGE_KEY = 'route_planner_saved_routes'
 
 export const useSavedRoutesStore = defineStore('savedRoutes', () => {
   const routes = ref<SavedRoute[]>(_loadFromStorage())
+  const storageError = ref<string | null>(null)
 
   function saveRoute(route: SavedRoute) {
     routes.value.unshift(route)
@@ -29,13 +30,15 @@ export const useSavedRoutesStore = defineStore('savedRoutes', () => {
   function _persist() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(routes.value))
+      storageError.value = null
     } catch {
-      // localStorage quota exceeded — handled in Phase 10
+      storageError.value = 'Could not save route: storage quota exceeded'
     }
   }
 
   return {
     routes,
+    storageError,
     saveRoute,
     deleteRoute,
   }

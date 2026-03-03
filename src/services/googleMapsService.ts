@@ -3,6 +3,10 @@ import type { Waypoint } from '@/types/waypoint'
 
 let mapsPromise: Promise<void> | null = null
 
+export function resetGoogleMaps(): void {
+  mapsPromise = null
+}
+
 export function loadGoogleMaps(): Promise<void> {
   if (mapsPromise) return mapsPromise
 

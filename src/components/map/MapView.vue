@@ -9,6 +9,8 @@ const mapContainer = ref<HTMLElement | null>(null)
 const waypointStore = useWaypointStore()
 
 const { mapInstance, isLoaded, loadError } = useGoogleMaps(mapContainer)
+
+function reloadPage() { window.location.reload() }
 const { renderRoute, clearRoute } = useDirections(mapInstance)
 
 watch(
@@ -38,11 +40,14 @@ defineExpose({ renderRoute })
 
     <div
       v-if="loadError"
-      class="map-overlay d-flex align-center justify-center flex-column text-center"
+      class="map-overlay d-flex align-center justify-center flex-column text-center pa-6"
     >
       <v-icon size="48" color="error">mdi-map-marker-off</v-icon>
       <p class="mt-2 text-body-1">Failed to load map</p>
-      <p class="text-caption text-medium-emphasis">{{ loadError }}</p>
+      <p class="text-caption text-medium-emphasis mb-4">{{ loadError }}</p>
+      <v-btn color="primary" variant="tonal" prepend-icon="mdi-refresh" @click="reloadPage">
+        Reload page
+      </v-btn>
     </div>
 
     <template v-if="isLoaded && mapInstance">

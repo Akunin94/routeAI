@@ -101,6 +101,9 @@ function parseSuggestion(text: string): AiSuggestion | null {
   return null
 }
 
+// Export helpers for testing
+export { parseSuggestion, buildContext }
+
 // ---------------------------------------------------------------------------
 // Composable
 // ---------------------------------------------------------------------------
@@ -122,8 +125,10 @@ export function useRouteOptimizer() {
         fullResponse += chunk
         aiStore.appendToLastMessage(chunk)
       })
-
       aiStore.setPendingSuggestion(parseSuggestion(fullResponse))
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to reach AI service'
+      aiStore.appendToLastMessage(`\n\n_${msg}_`)
     } finally {
       aiStore.isStreaming = false
     }

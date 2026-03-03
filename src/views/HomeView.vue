@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 import { useWaypointStore } from '@/stores/waypointStore'
 import { useRouteStore } from '@/stores/routeStore'
@@ -23,6 +23,12 @@ const savedRoutesStore = useSavedRoutesStore()
 const mapViewRef = ref<InstanceType<typeof MapView> | null>(null)
 const saveModalOpen = ref(false)
 const savedExpanded = ref(false)
+
+const showRouteError = ref(false)
+const showStorageError = ref(false)
+
+watch(() => routeStore.error, (val) => { if (val) showRouteError.value = true })
+watch(() => savedRoutesStore.storageError, (val) => { if (val) showStorageError.value = true })
 
 const searchLabel = computed(() => {
   if (waypointStore.waypoints.length === 0) return 'Add origin'
@@ -153,4 +159,18 @@ function handleClearAll() {
   </v-main>
 
   <SaveRouteModal v-model="saveModalOpen" @save="handleSaveRoute" />
+
+  <v-snackbar v-model="showRouteError" color="error" timeout="5000">
+    {{ routeStore.error }}
+    <template #actions>
+      <v-btn variant="text" @click="showRouteError = false">Close</v-btn>
+    </template>
+  </v-snackbar>
+
+  <v-snackbar v-model="showStorageError" color="warning" timeout="5000">
+    {{ savedRoutesStore.storageError }}
+    <template #actions>
+      <v-btn variant="text" @click="showStorageError = false">Close</v-btn>
+    </template>
+  </v-snackbar>
 </template>
