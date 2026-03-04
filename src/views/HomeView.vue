@@ -149,7 +149,7 @@ function handleClearAll() {
         elevation="6"
         rounded="pill"
         prepend-icon="mdi-robot"
-        style="position: absolute; bottom: 24px; right: 24px;"
+        style="position: absolute; top: 16px; right: 16px;"
         @click="aiStore.toggleChat()"
       >
         AI Assistant

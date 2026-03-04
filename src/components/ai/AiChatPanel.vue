@@ -44,14 +44,13 @@ watch(
 </script>
 
 <template>
-  <v-navigation-drawer
-    :model-value="aiStore.isChatOpen"
-    location="right"
-    temporary
-    width="380"
-    @update:model-value="aiStore.isChatOpen = $event"
+  <v-card
+    v-if="aiStore.isChatOpen"
+    class="ai-panel"
+    elevation="8"
+    rounded="lg"
   >
-    <v-toolbar density="compact" color="primary" flat>
+    <v-toolbar density="compact" color="primary" flat rounded="0">
       <v-icon class="ml-3 mr-2">mdi-robot-outline</v-icon>
       <v-toolbar-title class="text-body-1">AI Route Assistant</v-toolbar-title>
       <template #append>
@@ -97,34 +96,42 @@ watch(
       @dismiss="aiStore.setPendingSuggestion(null)"
     />
 
-    <template #append>
-      <v-divider />
-      <div class="pa-2 d-flex align-center" style="gap: 8px;">
-        <v-text-field
-          v-model="inputText"
-          placeholder="Ask about your route…"
-          variant="outlined"
-          density="compact"
-          hide-details
-          :disabled="aiStore.isStreaming"
-          @keyup.enter="handleSend"
-        />
-        <v-btn
-          icon="mdi-send"
-          color="primary"
-          size="default"
-          :loading="aiStore.isStreaming"
-          :disabled="!inputText.trim()"
-          @click="handleSend"
-        />
-      </div>
-    </template>
-  </v-navigation-drawer>
+    <v-divider />
+    <div class="pa-2 d-flex align-center" style="gap: 8px;">
+      <v-text-field
+        v-model="inputText"
+        placeholder="Ask about your route…"
+        variant="outlined"
+        density="compact"
+        hide-details
+        :disabled="aiStore.isStreaming"
+        @keyup.enter="handleSend"
+      />
+      <v-btn
+        icon="mdi-send"
+        color="primary"
+        size="default"
+        :loading="aiStore.isStreaming"
+        :disabled="!inputText.trim()"
+        @click="handleSend"
+      />
+    </div>
+  </v-card>
 </template>
 
 <style scoped>
+.ai-panel {
+  position: fixed;
+  top: 64px;
+  right: 16px;
+  width: 380px;
+  height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+}
 .messages-area {
   overflow-y: auto;
-  height: calc(100vh - 180px);
+  flex: 1;
 }
 </style>
