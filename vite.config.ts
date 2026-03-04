@@ -32,6 +32,17 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vue-vendor': ['vue', 'vue-router', 'pinia'],
+            'vuetify': ['vuetify'],
+            'maps': ['@googlemaps/js-api-loader'],
+          },
+        },
+      },
+    },
     test: {
       environment: 'happy-dom',
       globals: true,
