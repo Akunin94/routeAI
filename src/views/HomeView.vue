@@ -144,14 +144,15 @@ function handleClearAll() {
 
       <!-- AI toggle FAB -->
       <v-btn
-        icon
         color="primary"
         size="large"
-        elevation="4"
+        elevation="6"
+        rounded="pill"
+        prepend-icon="mdi-robot"
         style="position: absolute; bottom: 24px; right: 24px;"
         @click="aiStore.toggleChat()"
       >
-        <v-icon>mdi-robot</v-icon>
+        AI Assistant
       </v-btn>
     </div>
 

@@ -15,6 +15,7 @@ export function useGoogleMaps(mapContainerRef: Ref<HTMLElement | null>) {
     mapTypeControl: false,
     fullscreenControl: false,
     streetViewControl: false,
+    zoomControl: false,
   }
 
   // Google Maps fires this global callback when the API key is invalid/unauthorized
