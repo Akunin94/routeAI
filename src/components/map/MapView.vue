@@ -57,6 +57,7 @@ defineExpose({ renderRoute })
         :map="mapInstance"
         :position="wp.location"
         :label="wp.label"
+        :address="wp.address"
         :is-origin="wp.isOrigin"
         :is-destination="wp.isDestination"
       />

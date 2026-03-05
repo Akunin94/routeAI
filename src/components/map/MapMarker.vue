@@ -5,11 +5,13 @@ const props = defineProps<{
   map: google.maps.Map | null
   position: { lat: number; lng: number }
   label: string
+  address: string
   isOrigin: boolean
   isDestination: boolean
 }>()
 
 let marker: google.maps.Marker | null = null
+let infoWindow: google.maps.InfoWindow | null = null
 
 function getIconColor(): string {
   if (props.isOrigin) return '#4CAF50'
@@ -49,6 +51,22 @@ function sync() {
       icon,
       label: labelOpt,
     })
+
+    infoWindow = new google.maps.InfoWindow()
+
+    marker.addListener('mouseover', () => {
+      infoWindow!.setContent(
+        `<div style="font-family:sans-serif;padding:4px 2px;min-width:140px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:2px">${props.label}</div>
+          <div style="font-size:12px;color:#555">${props.address}</div>
+        </div>`
+      )
+      infoWindow!.open(props.map, marker)
+    })
+
+    marker.addListener('mouseout', () => {
+      infoWindow!.close()
+    })
   } else {
     marker.setPosition(props.position)
     marker.setIcon(icon)
@@ -63,6 +81,8 @@ watch(
 )
 
 onUnmounted(() => {
+  infoWindow?.close()
+  infoWindow = null
   marker?.setMap(null)
   marker = null
 })
