@@ -97,24 +97,38 @@ watch(
     />
 
     <v-divider />
-    <div class="pa-2 d-flex align-center" style="gap: 8px;">
-      <v-text-field
-        v-model="inputText"
-        placeholder="Ask about your route…"
-        variant="outlined"
-        density="compact"
-        hide-details
-        :disabled="aiStore.isStreaming"
-        @keyup.enter="handleSend"
-      />
+    <div class="pa-2 d-flex flex-column" style="gap: 8px;">
       <v-btn
-        icon="mdi-send"
+        v-if="waypointStore.hasEnoughWaypoints"
+        block
+        size="small"
         color="primary"
-        size="default"
+        variant="tonal"
+        prepend-icon="mdi-auto-fix"
         :loading="aiStore.isStreaming"
-        :disabled="!inputText.trim()"
-        @click="handleSend"
-      />
+        @click="handleOptimize"
+      >
+        Optimize Route
+      </v-btn>
+      <div class="d-flex align-center" style="gap: 8px;">
+        <v-text-field
+          v-model="inputText"
+          placeholder="Ask about your route…"
+          variant="outlined"
+          density="compact"
+          hide-details
+          :disabled="aiStore.isStreaming"
+          @keyup.enter="handleSend"
+        />
+        <v-btn
+          icon="mdi-send"
+          color="primary"
+          size="default"
+          :loading="aiStore.isStreaming"
+          :disabled="!inputText.trim()"
+          @click="handleSend"
+        />
+      </div>
     </div>
   </v-card>
 </template>
