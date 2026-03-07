@@ -34,6 +34,17 @@ watch(
   },
 )
 
+let departureTimeTimer: ReturnType<typeof setTimeout> | null = null
+watch(
+  () => routeStore.departureTime,
+  () => {
+    if (departureTimeTimer) clearTimeout(departureTimeTimer)
+    departureTimeTimer = setTimeout(() => {
+      if (waypointStore.hasEnoughWaypoints) renderRoute()
+    }, 600)
+  },
+)
+
 onUnmounted(() => clearRoute())
 
 defineExpose({ renderRoute })

@@ -39,7 +39,15 @@ export function useDirections(mapInstance: Ref<google.maps.Map | null>) {
 
     try {
       const mode = google.maps.TravelMode[routeStore.travelMode]
-      const result = await calculateRoute(waypointStore.waypoints, mode)
+      const depTime = routeStore.departureTime
+        ? (() => {
+            const [h, m] = routeStore.departureTime.split(':').map(Number)
+            const d = new Date()
+            d.setHours(h, m, 0, 0)
+            return d
+          })()
+        : undefined
+      const result = await calculateRoute(waypointStore.waypoints, mode, depTime)
       renderer.setDirections(result)
 
       const legs = result.routes[0].legs
@@ -48,6 +56,9 @@ export function useDirections(mapInstance: Ref<google.maps.Map | null>) {
         endAddress: leg.end_address,
         distance: { text: leg.distance?.text ?? '', value: leg.distance?.value ?? 0 },
         duration: { text: leg.duration?.text ?? '', value: leg.duration?.value ?? 0 },
+        ...(leg.duration_in_traffic && {
+          durationInTraffic: { text: leg.duration_in_traffic.text, value: leg.duration_in_traffic.value ?? 0 },
+        }),
         steps: leg.steps.map(
           (step): RouteStep => ({
             instruction: step.instructions,

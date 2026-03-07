@@ -300,7 +300,20 @@ async function handleFileSelected(event: Event) {
         </template>
       </v-toolbar>
       <v-divider />
-      <div class="overflow-y-auto" style="height: calc(100vh - 48px);">
+      <div class="px-3 pt-3 pb-1">
+        <v-text-field
+          :model-value="routeStore.departureTime"
+          type="time"
+          label="Departure time"
+          density="compact"
+          variant="outlined"
+          hide-details
+          clearable
+          prepend-inner-icon="mdi-clock-start"
+          @update:model-value="routeStore.setDepartureTime($event ?? '')"
+        />
+      </div>
+      <div class="overflow-y-auto" style="height: calc(100vh - 100px);">
         <RouteSummary />
       </div>
     </div>

@@ -9,6 +9,7 @@ export const useRouteStore = defineStore('route', () => {
   const isCalculating = ref(false)
   const error = ref<string | null>(null)
   const travelMode = ref<TravelMode>('DRIVING')
+  const departureTime = ref<string>('')  // HH:MM, empty = not set
 
   function setActiveRoute(route: Route) {
     activeRoute.value = route
@@ -38,17 +39,23 @@ export const useRouteStore = defineStore('route', () => {
     travelMode.value = mode
   }
 
+  function setDepartureTime(time: string) {
+    departureTime.value = time
+  }
+
   return {
     activeRoute,
     alternativeRoutes,
     isCalculating,
     error,
     travelMode,
+    departureTime,
     setActiveRoute,
     setAlternativeRoutes,
     setCalculating,
     setError,
     clearRoute,
     setTravelMode,
+    setDepartureTime,
   }
 })

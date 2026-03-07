@@ -28,6 +28,7 @@ export function loadGoogleMaps(): Promise<void> {
 export async function calculateRoute(
   waypoints: Waypoint[],
   travelMode: google.maps.TravelMode = google.maps.TravelMode.DRIVING,
+  departureTime?: Date,
 ): Promise<google.maps.DirectionsResult> {
   await loadGoogleMaps()
 
@@ -52,6 +53,12 @@ export async function calculateRoute(
         })),
         optimizeWaypoints: false, // Claude handles optimization
         travelMode,
+        ...(departureTime && travelMode === google.maps.TravelMode.DRIVING && {
+          drivingOptions: { departureTime, trafficModel: google.maps.TrafficModel.BEST_GUESS },
+        }),
+        ...(departureTime && travelMode === google.maps.TravelMode.TRANSIT && {
+          transitOptions: { departureTime },
+        }),
       },
       (result, status) => {
         if (status === google.maps.DirectionsStatus.OK && result) {

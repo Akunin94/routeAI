@@ -1,7 +1,25 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouteStore } from '@/stores/routeStore'
 
 const routeStore = useRouteStore()
+
+// ETA for each stop: departure + cumulative leg durations
+const etas = computed<string[]>(() => {
+  const dt = routeStore.departureTime
+  const route = routeStore.activeRoute
+  if (!dt || !route) return []
+
+  const [h, m] = dt.split(':').map(Number)
+  let seconds = h * 3600 + m * 60
+
+  return route.legs.map((leg) => {
+    seconds += (leg.durationInTraffic ?? leg.duration).value
+    const hh = Math.floor(seconds / 3600) % 24
+    const mm = Math.floor((seconds % 3600) / 60)
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
+  })
+})
 </script>
 
 <template>
@@ -11,7 +29,7 @@ const routeStore = useRouteStore()
       Route Summary
     </div>
 
-    <div class="d-flex ga-2 mb-3">
+    <div class="d-flex flex-wrap ga-2 mb-3">
       <v-chip size="small" color="primary" prepend-icon="mdi-map-marker-distance">
         {{ routeStore.activeRoute.totalDistance.text }}
       </v-chip>
@@ -24,16 +42,22 @@ const routeStore = useRouteStore()
       <v-expansion-panel
         v-for="(leg, i) in routeStore.activeRoute.legs"
         :key="i"
-        :title="`Leg ${i + 1} · ${leg.distance.text} · ${leg.duration.text}`"
+        :title="`Leg ${i + 1} · ${leg.distance.text} · ${(leg.durationInTraffic ?? leg.duration).text}`"
       >
         <v-expansion-panel-text>
           <p class="text-caption text-medium-emphasis">
             {{ leg.startAddress }}
           </p>
           <v-icon size="14" class="mx-1">mdi-arrow-down</v-icon>
-          <p class="text-caption text-medium-emphasis">
+          <p class="text-caption text-medium-emphasis mb-2">
             {{ leg.endAddress }}
           </p>
+          <v-chip v-if="etas[i]" size="x-small" color="info" prepend-icon="mdi-clock-check-outline">
+            Arr {{ etas[i] }}
+          </v-chip>
+          <v-chip v-if="leg.durationInTraffic" size="x-small" color="warning" prepend-icon="mdi-car-clock" class="ml-1">
+            Traffic: {{ leg.durationInTraffic.text }}
+          </v-chip>
         </v-expansion-panel-text>
       </v-expansion-panel>
     </v-expansion-panels>

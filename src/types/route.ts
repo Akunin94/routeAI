@@ -11,6 +11,7 @@ export interface RouteLeg {
   endAddress: string
   distance: { text: string; value: number }
   duration: { text: string; value: number }
+  durationInTraffic?: { text: string; value: number }
   steps: RouteStep[]
 }
 
