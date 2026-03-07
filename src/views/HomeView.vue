@@ -174,17 +174,22 @@ async function handleFileSelected(event: Event) {
           <v-icon size="18">mdi-bus</v-icon>
         </v-btn>
       </v-btn-toggle>
-      <v-btn
-        block
-        variant="tonal"
-        color="secondary"
-        size="small"
-        prepend-icon="mdi-upload-outline"
-        :loading="importLoading"
-        @click="triggerFileUpload"
-      >
-        {{ importLoading ? `Geocoding ${importProgress}/${importTotal}…` : 'Upload file' }}
-      </v-btn>
+      <v-tooltip location="right" text="Upload .tsv / .csv / .txt — our export format or a plain address list">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            block
+            variant="tonal"
+            color="secondary"
+            size="small"
+            prepend-icon="mdi-upload-outline"
+            :loading="importLoading"
+            @click="triggerFileUpload"
+          >
+            {{ importLoading ? `Geocoding ${importProgress}/${importTotal}…` : 'Upload file' }}
+          </v-btn>
+        </template>
+      </v-tooltip>
       <input
         ref="fileInputRef"
         type="file"
@@ -262,24 +267,30 @@ async function handleFileSelected(event: Event) {
         <v-icon class="ml-3 mr-2" color="primary">mdi-routes</v-icon>
         <v-toolbar-title class="text-body-2 font-weight-bold">Route Details</v-toolbar-title>
         <template #append>
-          <v-btn
-            v-if="routeStore.activeRoute"
-            icon="mdi-google-maps"
-            size="small"
-            variant="text"
-            title="Open in Google Maps"
-            :disabled="routeStore.isCalculating"
-            @click="openInGoogleMaps"
-          />
-          <v-btn
-            v-if="routeStore.activeRoute"
-            icon="mdi-download-outline"
-            size="small"
-            variant="text"
-            title="Download TSV"
-            :disabled="routeStore.isCalculating"
-            @click="downloadRouteCsv(routeStore.activeRoute!)"
-          />
+          <v-tooltip v-if="routeStore.activeRoute" location="bottom" text="Open in Google Maps">
+            <template #activator="{ props }">
+              <v-btn
+                v-bind="props"
+                icon="mdi-google-maps"
+                size="small"
+                variant="text"
+                :disabled="routeStore.isCalculating"
+                @click="openInGoogleMaps"
+              />
+            </template>
+          </v-tooltip>
+          <v-tooltip v-if="routeStore.activeRoute" location="bottom" text="Download as TSV">
+            <template #activator="{ props }">
+              <v-btn
+                v-bind="props"
+                icon="mdi-download-outline"
+                size="small"
+                variant="text"
+                :disabled="routeStore.isCalculating"
+                @click="downloadRouteCsv(routeStore.activeRoute!)"
+              />
+            </template>
+          </v-tooltip>
           <v-btn
             icon="mdi-close"
             size="small"
