@@ -14,6 +14,7 @@ import RouteSummary from '@/components/routes/RouteSummary.vue'
 import SaveRouteModal from '@/components/routes/SaveRouteModal.vue'
 import SavedRoutesList from '@/components/routes/SavedRoutesList.vue'
 import AiChatPanel from '@/components/ai/AiChatPanel.vue'
+import { downloadRouteCsv } from '@/utils/routeCsv'
 
 const waypointStore = useWaypointStore()
 const routeStore = useRouteStore()
@@ -146,6 +147,14 @@ function handleClearAll() {
         <v-icon class="ml-3 mr-2" color="primary">mdi-routes</v-icon>
         <v-toolbar-title class="text-body-2 font-weight-bold">Route Details</v-toolbar-title>
         <template #append>
+          <v-btn
+            v-if="routeStore.activeRoute"
+            icon="mdi-download-outline"
+            size="small"
+            variant="text"
+            title="Download CSV"
+            @click="downloadRouteCsv(routeStore.activeRoute!)"
+          />
           <v-btn
             icon="mdi-close"
             size="small"
