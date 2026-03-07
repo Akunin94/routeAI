@@ -74,6 +74,27 @@ function handleClearAll() {
   aiStore.clearHistory()
 }
 
+function openInGoogleMaps() {
+  const route = routeStore.activeRoute
+  if (!route || route.waypoints.length < 2) return
+  const origin = route.waypoints[0].location
+  const destination = route.waypoints[route.waypoints.length - 1].location
+  const stops = route.waypoints.slice(1, -1)
+  const modeMap: Record<string, string> = {
+    DRIVING: 'driving', WALKING: 'walking', BICYCLING: 'bicycling', TRANSIT: 'transit',
+  }
+  const params = new URLSearchParams({
+    api: '1',
+    origin: `${origin.lat},${origin.lng}`,
+    destination: `${destination.lat},${destination.lng}`,
+    travelmode: modeMap[routeStore.travelMode] ?? 'driving',
+  })
+  if (stops.length > 0) {
+    params.set('waypoints', stops.map(s => `${s.location.lat},${s.location.lng}`).join('|'))
+  }
+  window.open(`https://www.google.com/maps/dir/?${params.toString()}`, '_blank')
+}
+
 function triggerFileUpload() {
   fileInputRef.value?.click()
 }
@@ -241,6 +262,15 @@ async function handleFileSelected(event: Event) {
         <v-icon class="ml-3 mr-2" color="primary">mdi-routes</v-icon>
         <v-toolbar-title class="text-body-2 font-weight-bold">Route Details</v-toolbar-title>
         <template #append>
+          <v-btn
+            v-if="routeStore.activeRoute"
+            icon="mdi-google-maps"
+            size="small"
+            variant="text"
+            title="Open in Google Maps"
+            :disabled="routeStore.isCalculating"
+            @click="openInGoogleMaps"
+          />
           <v-btn
             v-if="routeStore.activeRoute"
             icon="mdi-download-outline"
