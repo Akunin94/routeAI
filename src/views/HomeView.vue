@@ -106,7 +106,7 @@ async function handleFileSelected(event: Event) {
   ;(event.target as HTMLInputElement).value = ''
 
   const text = await file.text()
-  const parsed = parseFile(text)
+  const { waypoints: parsed, departureTime: parsedDepartureTime } = parseFile(text)
   if (parsed.length === 0) {
     importError.value = 'No valid addresses found in the file.'
     showImportError.value = true
@@ -133,6 +133,7 @@ async function handleFileSelected(event: Event) {
     }))
     routeStore.clearRoute()
     waypointStore.loadWaypoints(newWaypoints)
+    if (parsedDepartureTime) routeStore.setDepartureTime(parsedDepartureTime)
   } catch (err) {
     importError.value = err instanceof Error ? err.message : 'Import failed.'
     showImportError.value = true
@@ -287,7 +288,7 @@ async function handleFileSelected(event: Event) {
                 size="small"
                 variant="text"
                 :disabled="routeStore.isCalculating"
-                @click="downloadRouteCsv(routeStore.activeRoute!)"
+                @click="downloadRouteCsv(routeStore.activeRoute!, routeStore.departureTime || undefined)"
               />
             </template>
           </v-tooltip>

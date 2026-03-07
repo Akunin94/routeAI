@@ -44,7 +44,7 @@ export function useDirections(mapInstance: Ref<google.maps.Map | null>) {
             const [h, m] = routeStore.departureTime.split(':').map(Number)
             const d = new Date()
             d.setHours(h, m, 0, 0)
-            return d
+            return d > new Date() ? d : undefined
           })()
         : undefined
       const result = await calculateRoute(waypointStore.waypoints, mode, depTime)

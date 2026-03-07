@@ -6,27 +6,40 @@ export interface ParsedWaypoint {
   lng?: number
 }
 
+export interface ParsedFile {
+  waypoints: ParsedWaypoint[]
+  departureTime?: string  // HH:MM if present in exported TSV
+}
+
 /**
  * Parse uploaded file content.
  * Supports:
  *  1. Our own exported TSV ("Route Export" header) — coordinates included
  *  2. Simple list — one address per line, or TSV/CSV where first non-numeric column is the address
  */
-export function parseFile(content: string): ParsedWaypoint[] {
+export function parseFile(content: string): ParsedFile {
   const lines = content.split('\n').map(l => l.trim()).filter(Boolean)
-  if (lines.length === 0) return []
+  if (lines.length === 0) return { waypoints: [] }
 
   if (lines[0] === 'Route Export') {
     return parseExportedTsv(lines)
   }
-  return parseAddressList(lines)
+  return { waypoints: parseAddressList(lines) }
 }
 
-function parseExportedTsv(lines: string[]): ParsedWaypoint[] {
-  const sectionIdx = lines.findIndex(l => l === 'Waypoints')
-  if (sectionIdx === -1) return []
+function parseExportedTsv(lines: string[]): ParsedFile {
+  // Extract departure time from summary section (row index 2, column 3)
+  let departureTime: string | undefined
+  if (lines.length > 2) {
+    const summaryRow = lines[2].split('\t')
+    const dt = summaryRow[3]?.trim()
+    if (dt && /^\d{2}:\d{2}$/.test(dt)) departureTime = dt
+  }
 
-  const result: ParsedWaypoint[] = []
+  const sectionIdx = lines.findIndex(l => l === 'Waypoints')
+  if (sectionIdx === -1) return { waypoints: [] }
+
+  const waypoints: ParsedWaypoint[] = []
   // skip header row (sectionIdx + 1)
   for (let i = sectionIdx + 2; i < lines.length; i++) {
     const line = lines[i]
@@ -35,10 +48,10 @@ function parseExportedTsv(lines: string[]): ParsedWaypoint[] {
     if (cols.length >= 5) {
       const lat = parseFloat(cols[3])
       const lng = parseFloat(cols[4])
-      result.push({ address: cols[2], lat: isNaN(lat) ? undefined : lat, lng: isNaN(lng) ? undefined : lng })
+      waypoints.push({ address: cols[2], lat: isNaN(lat) ? undefined : lat, lng: isNaN(lng) ? undefined : lng })
     }
   }
-  return result
+  return { waypoints, departureTime }
 }
 
 function parseAddressList(lines: string[]): ParsedWaypoint[] {

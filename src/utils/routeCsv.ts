@@ -10,14 +10,14 @@ function row(...values: (string | number)[]): string {
   return values.map(String).join(SEP)
 }
 
-export function buildRouteCsv(route: Route): string {
+export function buildRouteCsv(route: Route, departureTime?: string): string {
   const lines: string[] = []
   const date = new Date(route.createdAt).toLocaleDateString()
 
   // Summary
   lines.push('Route Export')
-  lines.push(row('Total Distance', 'Total Duration', 'Date'))
-  lines.push(row(route.totalDistance.text, route.totalDuration.text, date))
+  lines.push(row('Total Distance', 'Total Duration', 'Date', 'Departure Time'))
+  lines.push(row(route.totalDistance.text, route.totalDuration.text, date, departureTime ?? ''))
   lines.push('')
 
   // Waypoints with coordinates
@@ -50,8 +50,8 @@ export function buildRouteCsv(route: Route): string {
   return lines.join('\n')
 }
 
-export function downloadRouteCsv(route: Route, filename = 'route.tsv'): void {
-  const content = buildRouteCsv(route)
+export function downloadRouteCsv(route: Route, departureTime?: string, filename = 'route.tsv'): void {
+  const content = buildRouteCsv(route, departureTime)
   // BOM for correct UTF-8 in Excel/Numbers
   const blob = new Blob(['\ufeff' + content], { type: 'text/tab-separated-values;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
