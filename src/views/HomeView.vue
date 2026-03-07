@@ -123,7 +123,7 @@ async function handleFileSelected(event: Event) {
 
 <template>
   <!-- Left sidebar — controls -->
-  <v-navigation-drawer permanent width="280">
+  <v-navigation-drawer permanent width="280" style="z-index: 1006;">
     <v-toolbar density="compact" color="primary" flat>
       <v-icon class="ml-3 mr-2">mdi-map-marker-path</v-icon>
       <v-toolbar-title class="text-body-1 font-weight-bold">Route Planner AI</v-toolbar-title>
