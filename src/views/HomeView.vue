@@ -15,6 +15,7 @@ import SaveRouteModal from '@/components/routes/SaveRouteModal.vue'
 import SavedRoutesList from '@/components/routes/SavedRoutesList.vue'
 import AiChatPanel from '@/components/ai/AiChatPanel.vue'
 import { downloadRouteCsv } from '@/utils/routeCsv'
+import { parseFile, resolveCoordinates } from '@/utils/routeImport'
 
 const waypointStore = useWaypointStore()
 const routeStore = useRouteStore()
@@ -24,9 +25,15 @@ const savedRoutesStore = useSavedRoutesStore()
 const mapViewRef = ref<InstanceType<typeof MapView> | null>(null)
 const saveModalOpen = ref(false)
 const savedExpanded = ref(false)
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const importLoading = ref(false)
+const importProgress = ref(0)
+const importTotal = ref(0)
 
 const showRouteError = ref(false)
 const showStorageError = ref(false)
+const showImportError = ref(false)
+const importError = ref('')
 
 watch(() => routeStore.error, (val) => { if (val) showRouteError.value = true })
 watch(() => savedRoutesStore.storageError, (val) => { if (val) showStorageError.value = true })
@@ -65,6 +72,46 @@ function handleClearAll() {
   routeStore.clearRoute()
   aiStore.clearHistory()
 }
+
+function triggerFileUpload() {
+  fileInputRef.value?.click()
+}
+
+async function handleFileSelected(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  // Reset input so the same file can be re-uploaded
+  ;(event.target as HTMLInputElement).value = ''
+
+  const text = await file.text()
+  const parsed = parseFile(text)
+  if (parsed.length === 0) {
+    importError.value = 'No valid addresses found in the file.'
+    showImportError.value = true
+    return
+  }
+
+  importLoading.value = true
+  importProgress.value = 0
+  importTotal.value = parsed.length
+
+  try {
+    const resolved = await resolveCoordinates(parsed, (done, total) => {
+      importProgress.value = done
+      importTotal.value = total
+    })
+    waypointStore.clearWaypoints()
+    routeStore.clearRoute()
+    for (const wp of resolved) {
+      waypointStore.addWaypoint({ address: wp.address, location: { lat: wp.lat, lng: wp.lng } })
+    }
+  } catch (err) {
+    importError.value = err instanceof Error ? err.message : 'Import failed.'
+    showImportError.value = true
+  } finally {
+    importLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -75,8 +122,26 @@ function handleClearAll() {
       <v-toolbar-title class="text-body-1 font-weight-bold">Route Planner AI</v-toolbar-title>
     </v-toolbar>
 
-    <div class="pa-3">
+    <div class="pa-3 d-flex flex-column" style="gap: 8px;">
       <WaypointSearch :label="searchLabel" @place-selected="onPlaceSelected" />
+      <v-btn
+        block
+        variant="tonal"
+        color="secondary"
+        size="small"
+        prepend-icon="mdi-upload-outline"
+        :loading="importLoading"
+        @click="triggerFileUpload"
+      >
+        {{ importLoading ? `Geocoding ${importProgress}/${importTotal}…` : 'Upload file' }}
+      </v-btn>
+      <input
+        ref="fileInputRef"
+        type="file"
+        accept=".csv,.tsv,.txt"
+        style="display: none;"
+        @change="handleFileSelected"
+      />
     </div>
 
     <WaypointList v-if="waypointStore.waypoints.length > 0" />
@@ -205,6 +270,13 @@ function handleClearAll() {
     {{ savedRoutesStore.storageError }}
     <template #actions>
       <v-btn variant="text" @click="showStorageError = false">Close</v-btn>
+    </template>
+  </v-snackbar>
+
+  <v-snackbar v-model="showImportError" color="error" timeout="6000">
+    {{ importError }}
+    <template #actions>
+      <v-btn variant="text" @click="showImportError = false">Close</v-btn>
     </template>
   </v-snackbar>
 </template>
