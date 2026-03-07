@@ -36,6 +36,10 @@ const searchLabel = computed(() => {
   return 'Add stop'
 })
 
+const showRoutePanel = computed(() =>
+  !!(routeStore.activeRoute || routeStore.isCalculating || routeStore.error)
+)
+
 function onPlaceSelected(place: PlaceResult) {
   waypointStore.addWaypoint({
     address: place.address,
@@ -63,8 +67,8 @@ function handleClearAll() {
 </script>
 
 <template>
-  <!-- Left sidebar -->
-  <v-navigation-drawer permanent width="380">
+  <!-- Left sidebar — controls -->
+  <v-navigation-drawer permanent width="280">
     <v-toolbar density="compact" color="primary" flat>
       <v-icon class="ml-3 mr-2">mdi-map-marker-path</v-icon>
       <v-toolbar-title class="text-body-1 font-weight-bold">Route Planner AI</v-toolbar-title>
@@ -117,8 +121,6 @@ function handleClearAll() {
       </v-btn>
     </div>
 
-    <RouteSummary />
-
     <v-divider class="mx-3 my-2" />
 
     <div
@@ -136,6 +138,28 @@ function handleClearAll() {
 
     <SavedRoutesList v-if="savedExpanded" />
   </v-navigation-drawer>
+
+  <!-- Route Details Panel — slides in to the right of the sidebar -->
+  <Transition name="slide-panel">
+    <div v-if="showRoutePanel" class="route-details-panel elevation-4">
+      <v-toolbar density="compact" color="surface-variant" flat>
+        <v-icon class="ml-3 mr-2" color="primary">mdi-routes</v-icon>
+        <v-toolbar-title class="text-body-2 font-weight-bold">Route Details</v-toolbar-title>
+        <template #append>
+          <v-btn
+            icon="mdi-close"
+            size="small"
+            variant="text"
+            @click="routeStore.clearRoute()"
+          />
+        </template>
+      </v-toolbar>
+      <v-divider />
+      <div class="overflow-y-auto" style="height: calc(100vh - 48px);">
+        <RouteSummary />
+      </div>
+    </div>
+  </Transition>
 
   <!-- Map area -->
   <v-main>
@@ -175,3 +199,27 @@ function handleClearAll() {
     </template>
   </v-snackbar>
 </template>
+
+<style scoped>
+.route-details-panel {
+  position: fixed;
+  top: 0;
+  left: 280px;
+  width: 300px;
+  height: 100vh;
+  background: rgb(var(--v-theme-surface));
+  z-index: 1005;
+  display: flex;
+  flex-direction: column;
+}
+
+.slide-panel-enter-active,
+.slide-panel-leave-active {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-panel-enter-from,
+.slide-panel-leave-to {
+  transform: translateX(-100%);
+}
+</style>
