@@ -131,6 +131,28 @@ async function handleFileSelected(event: Event) {
 
     <div class="pa-3 d-flex flex-column" style="gap: 8px;">
       <WaypointSearch :label="searchLabel" @place-selected="onPlaceSelected" />
+
+      <v-btn-toggle
+        :model-value="routeStore.travelMode"
+        mandatory
+        density="compact"
+        rounded="lg"
+        class="w-100"
+        @update:model-value="routeStore.setTravelMode($event)"
+      >
+        <v-btn value="DRIVING" size="small" class="flex-1-1" title="Driving">
+          <v-icon size="18">mdi-car</v-icon>
+        </v-btn>
+        <v-btn value="WALKING" size="small" class="flex-1-1" title="Walking">
+          <v-icon size="18">mdi-walk</v-icon>
+        </v-btn>
+        <v-btn value="BICYCLING" size="small" class="flex-1-1" title="Bicycling">
+          <v-icon size="18">mdi-bike</v-icon>
+        </v-btn>
+        <v-btn value="TRANSIT" size="small" class="flex-1-1" title="Transit">
+          <v-icon size="18">mdi-bus</v-icon>
+        </v-btn>
+      </v-btn-toggle>
       <v-btn
         block
         variant="tonal"

@@ -38,7 +38,8 @@ export function useDirections(mapInstance: Ref<google.maps.Map | null>) {
     routeStore.setCalculating(true)
 
     try {
-      const result = await calculateRoute(waypointStore.waypoints)
+      const mode = google.maps.TravelMode[routeStore.travelMode]
+      const result = await calculateRoute(waypointStore.waypoints, mode)
       renderer.setDirections(result)
 
       const legs = result.routes[0].legs

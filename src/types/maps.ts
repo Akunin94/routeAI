@@ -1,3 +1,5 @@
+export type TravelMode = 'DRIVING' | 'WALKING' | 'BICYCLING' | 'TRANSIT'
+
 export interface MapViewport {
   center: { lat: number; lng: number }
   zoom: number

@@ -3,10 +3,12 @@ import { ref, watch, onUnmounted } from 'vue'
 import { useGoogleMaps } from '@/composables/useGoogleMaps'
 import { useDirections } from '@/composables/useDirections'
 import { useWaypointStore } from '@/stores/waypointStore'
+import { useRouteStore } from '@/stores/routeStore'
 import MapMarker from './MapMarker.vue'
 
 const mapContainer = ref<HTMLElement | null>(null)
 const waypointStore = useWaypointStore()
+const routeStore = useRouteStore()
 
 const { mapInstance, isLoaded, loadError } = useGoogleMaps(mapContainer)
 
@@ -23,6 +25,13 @@ watch(
     }
   },
   { deep: true },
+)
+
+watch(
+  () => routeStore.travelMode,
+  () => {
+    if (waypointStore.hasEnoughWaypoints) renderRoute()
+  },
 )
 
 onUnmounted(() => clearRoute())
