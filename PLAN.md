@@ -258,22 +258,20 @@ npm install -D vitest @vue/test-utils happy-dom
 - `waypointStore.test.ts` — add/remove/reorder logic
 - `useRouteOptimizer.test.ts` — prompt building + suggestion parsing
 
-## Layout (HomeView.vue)
-```
-┌─────────────────┬──────────────────────────┐
-│  v-navigation-  │  Map (flex-1)            │
-│  drawer (400px) │                          │
-│                 │                          │
-│  [Search input] │  Google Maps             │
-│  [Waypoint 1]   │                          │
-│  [Waypoint 2]   │           [AI Button] 🤖 │
-│  [+ Add Stop]   │                          │
-│  ─────────────  │  ┌─────────────────────┐ │
-│  [Calc Route]   │  │  AI Chat Drawer     │ │
-│  [Save Route]   │  │  (slides in/out)    │ │
-│  ─────────────  │  └─────────────────────┘ │
-│  Route Summary  │                          │
-│  ─────────────  │                          │
-│  Saved Routes   │                          │
-└─────────────────┴──────────────────────────┘
-```
+
+## Phase 11 — Additional Features (Backlog)
+
+### High priority
+- **Travel mode** — driving / walking / cycling / transit selector. One button, Google Directions API already supports it via `travelMode` param in `calculateRoute()`
+- **"Open in Google Maps"** — button to open the built route in native Google Maps app. Encode as `https://www.google.com/maps/dir/?api=1&origin=...&destination=...&waypoints=...`
+- **Departure time → ETA per stop** — user sets departure time, app shows estimated arrival at each waypoint
+
+### Medium priority
+- **Alternative routes** — Google returns up to 3 alternatives (`provideRouteAlternatives: true`). `alternativeRoutes` in routeStore already exists, just unused
+- **Share route via URL** — encode waypoints as URL params (base64 or JSON), share as a link
+- **Fuel cost estimate** — user inputs fuel consumption (l/100km) + price per litre → app shows estimated trip cost
+
+### Low priority / UX polish
+- **Undo/redo** for waypoint changes
+- **Dark mode** — Vuetify supports it natively via theme toggle
+- **Drag markers on map** — reorder stops by dragging directly on the map
