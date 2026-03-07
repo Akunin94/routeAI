@@ -7,6 +7,7 @@ import { useAiStore } from '@/stores/aiStore'
 import { useSavedRoutesStore } from '@/stores/savedRoutesStore'
 import type { PlaceResult } from '@/types/maps'
 import type { SavedRoute } from '@/types/route'
+import type { Waypoint } from '@/types/waypoint'
 import MapView from '@/components/map/MapView.vue'
 import WaypointSearch from '@/components/waypoints/WaypointSearch.vue'
 import WaypointList from '@/components/waypoints/WaypointList.vue'
@@ -100,11 +101,17 @@ async function handleFileSelected(event: Event) {
       importProgress.value = done
       importTotal.value = total
     })
-    waypointStore.clearWaypoints()
+    const newWaypoints: Waypoint[] = resolved.map((wp, i) => ({
+      id: uuidv4(),
+      address: wp.address,
+      location: { lat: wp.lat, lng: wp.lng },
+      order: i,
+      isOrigin: i === 0,
+      isDestination: i === resolved.length - 1 && resolved.length > 1,
+      label: i === 0 ? 'Origin' : i === resolved.length - 1 && resolved.length > 1 ? 'Destination' : `Stop ${i}`,
+    }))
     routeStore.clearRoute()
-    for (const wp of resolved) {
-      waypointStore.addWaypoint({ address: wp.address, location: { lat: wp.lat, lng: wp.lng } })
-    }
+    waypointStore.loadWaypoints(newWaypoints)
   } catch (err) {
     importError.value = err instanceof Error ? err.message : 'Import failed.'
     showImportError.value = true
@@ -217,7 +224,8 @@ async function handleFileSelected(event: Event) {
             icon="mdi-download-outline"
             size="small"
             variant="text"
-            title="Download CSV"
+            title="Download TSV"
+            :disabled="routeStore.isCalculating"
             @click="downloadRouteCsv(routeStore.activeRoute!)"
           />
           <v-btn
