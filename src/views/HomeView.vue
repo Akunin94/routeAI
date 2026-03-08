@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 import { useWaypointStore } from '@/stores/waypointStore'
 import { useRouteStore } from '@/stores/routeStore'
@@ -17,6 +17,7 @@ import SavedRoutesList from '@/components/routes/SavedRoutesList.vue'
 import AiChatPanel from '@/components/ai/AiChatPanel.vue'
 import { downloadRouteCsv } from '@/utils/routeCsv'
 import { parseFile, resolveCoordinates } from '@/utils/routeImport'
+import { encodeSharePayload, decodeSharePayload } from '@/utils/routeShare'
 
 const waypointStore = useWaypointStore()
 const routeStore = useRouteStore()
@@ -35,6 +36,8 @@ const showRouteError = ref(false)
 const showStorageError = ref(false)
 const showImportError = ref(false)
 const importError = ref('')
+const showShareSnackbar = ref(false)
+const showSharedRouteSnackbar = ref(false)
 
 watch(() => routeStore.error, (val) => { if (val) showRouteError.value = true })
 watch(() => savedRoutesStore.storageError, (val) => { if (val) showStorageError.value = true })
@@ -94,6 +97,39 @@ function openInGoogleMaps() {
   }
   window.open(`https://www.google.com/maps/dir/?${params.toString()}`, '_blank')
 }
+
+function shareRoute() {
+  const wps = waypointStore.waypoints
+  if (wps.length < 2) return
+  const encoded = encodeSharePayload({
+    waypoints: wps.map(w => ({ address: w.address, lat: w.location.lat, lng: w.location.lng })),
+    mode: routeStore.travelMode,
+    time: routeStore.departureTime || undefined,
+  })
+  const url = `${window.location.origin}${window.location.pathname}?route=${encoded}`
+  navigator.clipboard.writeText(url)
+  showShareSnackbar.value = true
+}
+
+onMounted(() => {
+  const encoded = new URLSearchParams(window.location.search).get('route')
+  if (!encoded) return
+  const payload = decodeSharePayload(encoded)
+  if (!payload) return
+  const newWaypoints: Waypoint[] = payload.waypoints.map((w, i) => ({
+    id: uuidv4(),
+    address: w.address,
+    location: { lat: w.lat, lng: w.lng },
+    order: i,
+    isOrigin: i === 0,
+    isDestination: i === payload.waypoints.length - 1,
+    label: i === 0 ? 'Origin' : i === payload.waypoints.length - 1 ? 'Destination' : `Stop ${i}`,
+  }))
+  waypointStore.loadWaypoints(newWaypoints)
+  routeStore.setTravelMode(payload.mode as Parameters<typeof routeStore.setTravelMode>[0])
+  if (payload.time) routeStore.setDepartureTime(payload.time)
+  showSharedRouteSnackbar.value = true
+})
 
 function triggerFileUpload() {
   fileInputRef.value?.click()
@@ -268,6 +304,18 @@ async function handleFileSelected(event: Event) {
         <v-icon class="ml-3 mr-2" color="primary">mdi-routes</v-icon>
         <v-toolbar-title class="text-body-2 font-weight-bold">Route Details</v-toolbar-title>
         <template #append>
+          <v-tooltip v-if="waypointStore.waypoints.length >= 2" location="bottom" text="Copy share link">
+            <template #activator="{ props }">
+              <v-btn
+                v-bind="props"
+                icon="mdi-share-variant"
+                size="small"
+                variant="text"
+                :disabled="routeStore.isCalculating"
+                @click="shareRoute"
+              />
+            </template>
+          </v-tooltip>
           <v-tooltip v-if="routeStore.activeRoute" location="bottom" text="Open in Google Maps">
             <template #activator="{ props }">
               <v-btn
@@ -364,6 +412,14 @@ async function handleFileSelected(event: Event) {
       <v-btn variant="text" @click="showImportError = false">Close</v-btn>
     </template>
   </v-snackbar>
+
+  <v-snackbar v-model="showShareSnackbar" color="success" timeout="3000">
+    Link copied to clipboard
+  </v-snackbar>
+
+  <v-snackbar v-model="showSharedRouteSnackbar" color="info" timeout="4000">
+    Route loaded from shared link
+  </v-snackbar>
 </template>
 
 <style scoped>
@@ -371,7 +427,7 @@ async function handleFileSelected(event: Event) {
   position: fixed;
   top: 0;
   left: 280px;
-  width: 300px;
+  width: 340px;
   height: 100vh;
   background: rgb(var(--v-theme-surface));
   z-index: 1005;
