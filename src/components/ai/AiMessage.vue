@@ -19,7 +19,7 @@ const htmlContent = computed(() => {
 <template>
   <div :class="['d-flex', 'mb-2', isUser ? 'justify-end' : 'justify-start']">
     <v-sheet
-      :color="isUser ? 'primary' : 'grey-lighten-4'"
+      :color="isUser ? 'primary' : 'surface-variant'"
       class="pa-3 rounded-lg message-bubble"
       max-width="85%"
     >

@@ -1,14 +1,37 @@
 <script setup lang="ts">
 import { ref, watch, onUnmounted } from 'vue'
+import { useTheme } from 'vuetify'
 import { useGoogleMaps } from '@/composables/useGoogleMaps'
 import { useDirections } from '@/composables/useDirections'
 import { useWaypointStore } from '@/stores/waypointStore'
 import { useRouteStore } from '@/stores/routeStore'
 import MapMarker from './MapMarker.vue'
 
+const DARK_MAP_STYLES: google.maps.MapTypeStyle[] = [
+  { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#263c3f' }] },
+  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#6b9a76' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#746855' }] },
+  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1f2835' }] },
+  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#f3d19c' }] },
+  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2f3948' }] },
+  { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#515c6d' }] },
+  { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: '#17263c' }] },
+]
+
 const mapContainer = ref<HTMLElement | null>(null)
 const waypointStore = useWaypointStore()
 const routeStore = useRouteStore()
+const theme = useTheme()
 
 const { mapInstance, isLoaded, loadError } = useGoogleMaps(mapContainer)
 
@@ -43,6 +66,15 @@ watch(
       if (waypointStore.hasEnoughWaypoints) renderRoute()
     }, 600)
   },
+)
+
+// Apply dark/light styles whenever map loads or theme toggles
+watch(
+  [mapInstance, () => theme.global.current.value.dark],
+  ([map, isDark]) => {
+    if (map) (map as google.maps.Map).setOptions({ styles: isDark ? DARK_MAP_STYLES : [] })
+  },
+  { immediate: true },
 )
 
 onUnmounted(() => clearRoute())

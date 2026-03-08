@@ -384,7 +384,7 @@ async function handleFileSelected(event: Event) {
   </Transition>
 
   <!-- Map area -->
-  <v-main>
+  <v-main style="--v-layout-top: 0px;">
     <div style="position: relative; height: 100vh;">
       <MapView ref="mapViewRef" style="height: 100%; width: 100%;" />
 
