@@ -7,10 +7,14 @@ import '@mdi/font/css/materialdesignicons.css'
 import App from './App.vue'
 import router from './router'
 
+const savedTheme = localStorage.getItem('theme')
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+const defaultTheme = savedTheme ?? (prefersDark ? 'dark' : 'light')
+
 const vuetify = createVuetify({
   icons: { defaultSet: 'mdi' },
   theme: {
-    defaultTheme: 'light',
+    defaultTheme,
   },
 })
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { useTheme } from 'vuetify'
 import { v4 as uuidv4 } from 'uuid'
 import { useWaypointStore } from '@/stores/waypointStore'
 import { useRouteStore } from '@/stores/routeStore'
@@ -23,6 +24,12 @@ const waypointStore = useWaypointStore()
 const routeStore = useRouteStore()
 const aiStore = useAiStore()
 const savedRoutesStore = useSavedRoutesStore()
+
+const theme = useTheme()
+function toggleTheme() {
+  theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark'
+  localStorage.setItem('theme', theme.global.name.value)
+}
 
 const mapViewRef = ref<InstanceType<typeof MapView> | null>(null)
 const saveModalOpen = ref(false)
@@ -185,6 +192,14 @@ async function handleFileSelected(event: Event) {
     <v-toolbar density="compact" color="primary" flat>
       <v-icon class="ml-3 mr-2">mdi-map-marker-path</v-icon>
       <v-toolbar-title class="text-body-1 font-weight-bold">Route Planner AI</v-toolbar-title>
+      <template #append>
+        <v-btn
+          :icon="theme.global.current.value.dark ? 'mdi-weather-sunny' : 'mdi-weather-night'"
+          size="small"
+          variant="text"
+          @click="toggleTheme"
+        />
+      </template>
     </v-toolbar>
 
     <div class="pa-3 d-flex flex-column" style="gap: 8px;">
