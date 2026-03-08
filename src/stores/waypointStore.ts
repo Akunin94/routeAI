@@ -63,6 +63,13 @@ export const useWaypointStore = defineStore('waypoints', () => {
     waypoints.value = data
   }
 
+  function updateWaypointLocation(id: string, location: { lat: number; lng: number }, address: string) {
+    const wp = waypoints.value.find(w => w.id === id)
+    if (!wp) return
+    wp.location = location
+    wp.address = address
+  }
+
   function clearWaypoints() {
     waypoints.value = []
   }
@@ -91,6 +98,7 @@ export const useWaypointStore = defineStore('waypoints', () => {
     addWaypoint,
     removeWaypoint,
     reorderWaypoints,
+    updateWaypointLocation,
     loadWaypoints,
     clearWaypoints,
   }

@@ -8,6 +8,11 @@ const props = defineProps<{
   address: string
   isOrigin: boolean
   isDestination: boolean
+  waypointId: string
+}>()
+
+const emit = defineEmits<{
+  dragEnd: [id: string, lat: number, lng: number]
 }>()
 
 let marker: google.maps.Marker | null = null
@@ -50,6 +55,8 @@ function sync() {
       position: props.position,
       icon,
       label: labelOpt,
+      draggable: true,
+      cursor: 'grab',
     })
 
     infoWindow = new google.maps.InfoWindow()
@@ -66,6 +73,12 @@ function sync() {
 
     marker.addListener('mouseout', () => {
       infoWindow!.close()
+    })
+
+    marker.addListener('dragend', (e: google.maps.MapMouseEvent) => {
+      if (!e.latLng) return
+      infoWindow!.close()
+      emit('dragEnd', props.waypointId, e.latLng.lat(), e.latLng.lng())
     })
   } else {
     marker.setPosition(props.position)

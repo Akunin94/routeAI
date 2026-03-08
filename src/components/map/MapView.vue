@@ -77,6 +77,13 @@ watch(
   { immediate: true },
 )
 
+async function onMarkerDragEnd(waypointId: string, lat: number, lng: number) {
+  const geocoder = new google.maps.Geocoder()
+  const result = await geocoder.geocode({ location: { lat, lng } })
+  const address = result.results[0]?.formatted_address ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+  waypointStore.updateWaypointLocation(waypointId, { lat, lng }, address)
+}
+
 onUnmounted(() => clearRoute())
 
 defineExpose({ renderRoute })
@@ -112,6 +119,8 @@ defineExpose({ renderRoute })
         :address="wp.address"
         :is-origin="wp.isOrigin"
         :is-destination="wp.isDestination"
+        :waypoint-id="wp.id"
+        @drag-end="onMarkerDragEnd"
       />
     </template>
   </div>
