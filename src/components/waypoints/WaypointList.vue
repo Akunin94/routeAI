@@ -2,9 +2,11 @@
 import { ref } from 'vue'
 import { useWaypointStore } from '@/stores/waypointStore'
 import WaypointItem from './WaypointItem.vue'
+import type { PlaceResult } from '@/types/maps'
 
 const waypointStore = useWaypointStore()
 const draggedId = ref<string | null>(null)
+const editingId = ref<string | null>(null)
 
 function onDragStart(_e: DragEvent, id: string) {
   draggedId.value = id
@@ -36,6 +38,13 @@ function onDrop(e: DragEvent, targetId: string) {
 function onDragEnd() {
   draggedId.value = null
 }
+
+function onUpdate(id: string, place: PlaceResult) {
+  waypointStore.updateWaypointLocation(id, place.location, place.address)
+  const wp = waypointStore.waypoints.find(w => w.id === id)
+  if (wp && place.placeId) wp.placeId = place.placeId
+  editingId.value = null
+}
 </script>
 
 <template>
@@ -43,8 +52,8 @@ function onDragEnd() {
     <div
       v-for="wp in waypointStore.waypoints"
       :key="wp.id"
-      draggable="true"
-      @dragstart="onDragStart($event, wp.id)"
+      :draggable="editingId !== wp.id"
+      @dragstart="editingId !== wp.id && onDragStart($event, wp.id)"
       @dragover="onDragOver"
       @drop="onDrop($event, wp.id)"
       @dragend="onDragEnd"
@@ -53,6 +62,9 @@ function onDragEnd() {
         :waypoint="wp"
         :is-dragging="draggedId === wp.id"
         @remove="waypointStore.removeWaypoint"
+        @update="onUpdate"
+        @edit-start="editingId = wp.id"
+        @edit-end="editingId = null"
       />
     </div>
   </v-list>

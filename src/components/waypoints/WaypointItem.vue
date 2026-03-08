@@ -1,12 +1,38 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { Waypoint } from '@/types/waypoint'
+import type { PlaceResult } from '@/types/maps'
+import WaypointSearch from './WaypointSearch.vue'
 
-defineProps<{
+const props = defineProps<{
   waypoint: Waypoint
   isDragging?: boolean
 }>()
 
-const emit = defineEmits<{ remove: [id: string] }>()
+const emit = defineEmits<{
+  remove: [id: string]
+  update: [id: string, place: PlaceResult]
+  editStart: []
+  editEnd: []
+}>()
+
+const editing = ref(false)
+
+function startEdit() {
+  editing.value = true
+  emit('editStart')
+}
+
+function cancelEdit() {
+  editing.value = false
+  emit('editEnd')
+}
+
+function onPlaceSelected(place: PlaceResult) {
+  editing.value = false
+  emit('editEnd')
+  emit('update', props.waypoint.id, place)
+}
 
 function getColor(wp: Waypoint): string {
   if (wp.isOrigin) return 'success'
@@ -22,7 +48,30 @@ function getIcon(wp: Waypoint): string {
 </script>
 
 <template>
+  <!-- Edit mode: full-width flex row, no v-list-item constraints -->
+  <div v-if="editing" class="edit-row px-2 py-1">
+    <v-avatar :color="getColor(waypoint)" size="26" class="flex-shrink-0 mr-2">
+      <v-icon size="14" color="white">{{ getIcon(waypoint) }}</v-icon>
+    </v-avatar>
+    <WaypointSearch
+      :label="waypoint.label"
+      :initial-value="waypoint.address"
+      class="flex-1-1"
+      @place-selected="onPlaceSelected"
+    />
+    <v-btn
+      icon="mdi-close"
+      size="x-small"
+      variant="text"
+      color="grey"
+      class="flex-shrink-0 ml-1"
+      @click="cancelEdit"
+    />
+  </div>
+
+  <!-- Normal mode -->
   <v-list-item
+    v-else
     :class="{ 'bg-blue-lighten-5': isDragging }"
     min-height="52"
     class="px-2"
@@ -45,6 +94,13 @@ function getIcon(wp: Waypoint): string {
 
     <template #append>
       <v-btn
+        icon="mdi-pencil"
+        size="x-small"
+        variant="text"
+        color="grey"
+        @click="startEdit"
+      />
+      <v-btn
         icon="mdi-close"
         size="x-small"
         variant="text"
@@ -61,5 +117,10 @@ function getIcon(wp: Waypoint): string {
 }
 .drag-handle:active {
   cursor: grabbing;
+}
+.edit-row {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
 }
 </style>
