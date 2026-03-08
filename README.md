@@ -1,5 +1,7 @@
 # Route Planner AI
 
+**Live:** [route-ai-nine.vercel.app](https://route-ai-nine.vercel.app)
+
 A web app for multi-stop route planning with an AI assistant powered by Claude. Supports drag-and-drop editing, traffic-aware ETAs, export/import, and shareable links.
 
 ## Tech Stack
