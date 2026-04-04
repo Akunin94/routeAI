@@ -12,6 +12,7 @@ interface PlacesData {
   name?: string
   formatted_phone_number?: string
   website?: string
+  types?: string[]
   opening_hours?: {
     periods?: Array<{
       open: { day: number; time: string }
@@ -33,20 +34,28 @@ interface SuggestionField {
   source?: 'places' | 'ai'
 }
 
+interface NumberSuggestionField {
+  value: number
+  confidence: number
+  source?: 'places' | 'ai'
+}
+
 interface LocationSuggestions {
   alias: SuggestionField
   phone?: SuggestionField
   email?: SuggestionField
   time_windows?: TimeWindow[]
+  timezone?: SuggestionField
+  service_time?: NumberSuggestionField
+  stop_type?: SuggestionField
 }
 
 function formatTime(hhmm: string): string {
-  // Places API returns time as "0900" → "09:00"
   return `${hhmm.slice(0, 2)}:${hhmm.slice(2)}`
 }
 
 async function fetchPlacesDetails(placeId: string, apiKey: string): Promise<PlacesData | null> {
-  const fields = 'name,formatted_phone_number,website,opening_hours'
+  const fields = 'name,formatted_phone_number,website,opening_hours,types'
   const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=${encodeURIComponent(fields)}&key=${apiKey}`
 
   const res = await fetch(url)
@@ -59,7 +68,7 @@ async function fetchPlacesDetails(placeId: string, apiKey: string): Promise<Plac
 }
 
 async function findPlaceByAddress(address: string, apiKey: string): Promise<PlacesData | null> {
-  const fields = 'name,formatted_phone_number,website,opening_hours'
+  const fields = 'name,formatted_phone_number,website,opening_hours,types'
   const url = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(address)}&inputtype=textquery&fields=${encodeURIComponent(fields)}&key=${apiKey}`
 
   const res = await fetch(url)
@@ -72,29 +81,73 @@ async function findPlaceByAddress(address: string, apiKey: string): Promise<Plac
 }
 
 async function findPlaceByCoords(lat: number, lng: number, apiKey: string): Promise<PlacesData | null> {
-  const fields = 'name,formatted_phone_number,website,opening_hours'
-  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&rankby=distance&type=establishment&fields=${encodeURIComponent(fields)}&key=${apiKey}`
+  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&rankby=distance&type=establishment&key=${apiKey}`
 
   const res = await fetch(url)
   if (!res.ok) return null
 
-  const data = await res.json() as { status: string; results?: Array<PlacesData & { place_id: string }> }
+  const data = await res.json() as { status: string; results?: Array<{ place_id: string }> }
   if (data.status !== 'OK' || !data.results?.length) return null
 
-  // Get full details for the closest result
-  return fetchPlacesDetails(data.results[0].place_id!, apiKey)
+  return fetchPlacesDetails(data.results[0].place_id, apiKey)
+}
+
+async function fetchTimezone(lat: number, lng: number, apiKey: string): Promise<string | null> {
+  const timestamp = Math.floor(Date.now() / 1000)
+  const url = `https://maps.googleapis.com/maps/api/timezone/json?location=${lat},${lng}&timestamp=${timestamp}&key=${apiKey}`
+
+  const res = await fetch(url)
+  if (!res.ok) return null
+
+  const data = await res.json() as { status: string; timeZoneId?: string }
+  if (data.status !== 'OK' || !data.timeZoneId) return null
+
+  return data.timeZoneId
+}
+
+// Map Google Places types to R4m stop types and estimated service time (seconds)
+function inferFromPlaceTypes(types: string[]): { stop_type?: string; service_time?: number } {
+  const typeSet = new Set(types)
+
+  if (typeSet.has('restaurant') || typeSet.has('cafe') || typeSet.has('food')) {
+    return { stop_type: 'DELIVERY', service_time: 900 } // 15 min
+  }
+  if (typeSet.has('grocery_or_supermarket') || typeSet.has('supermarket')) {
+    return { stop_type: 'DELIVERY', service_time: 1200 } // 20 min
+  }
+  if (typeSet.has('hospital') || typeSet.has('doctor') || typeSet.has('health')) {
+    return { stop_type: 'SERVICE', service_time: 2700 } // 45 min
+  }
+  if (typeSet.has('store') || typeSet.has('shopping_mall') || typeSet.has('department_store')) {
+    return { stop_type: 'DELIVERY', service_time: 900 }
+  }
+  if (typeSet.has('warehouse') || typeSet.has('storage')) {
+    return { stop_type: 'PICKUP', service_time: 1800 } // 30 min
+  }
+  if (typeSet.has('school') || typeSet.has('university')) {
+    return { stop_type: 'DELIVERY', service_time: 600 } // 10 min
+  }
+  if (typeSet.has('gas_station') || typeSet.has('car_repair')) {
+    return { stop_type: 'SERVICE', service_time: 1200 }
+  }
+  if (typeSet.has('lodging') || typeSet.has('hotel')) {
+    return { stop_type: 'DELIVERY', service_time: 600 }
+  }
+
+  return {}
 }
 
 async function generateWithClaude(
   address: string,
   places: PlacesData | null,
   apiKey: string,
-): Promise<LocationSuggestions> {
+): Promise<Partial<LocationSuggestions>> {
   const systemPrompt = `You are a helpful assistant that generates location metadata for a route management application.
 Given an address and optional business data, return a JSON object with suggested values for location fields.
 
 Rules:
 - alias: short human-readable name (max 60 chars), derived from business name or street address
+- email: only include if you can confidently infer from the website domain (e.g. website "https://acme.com" → "info@acme.com")
 - Only include fields you have reasonable confidence in
 - Return raw JSON only, no markdown, no explanation
 
@@ -107,9 +160,9 @@ Output schema:
   const userLines: string[] = [`Address: ${address}`]
   if (places?.name) userLines.push(`Business name: ${places.name}`)
   if (places?.website) userLines.push(`Website: ${places.website}`)
+  if (places?.types?.length) userLines.push(`Business types: ${places.types.join(', ')}`)
 
-  const userPrompt = userLines.join('\n') +
-    '\n\nGenerate alias (always required) and email (only if confident from website domain). Return raw JSON.'
+  const userPrompt = userLines.join('\n') + '\n\nReturn raw JSON.'
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -120,30 +173,26 @@ Output schema:
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
+      max_tokens: 256,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
   })
 
-  if (!res.ok) {
-    throw new Error(`Claude API error: ${res.status}`)
-  }
+  if (!res.ok) throw new Error(`Claude API error: ${res.status}`)
 
   const data = await res.json() as { content: Array<{ type: string; text: string }> }
   const text = data.content.find((c) => c.type === 'text')?.text ?? '{}'
 
   try {
     const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
-    return JSON.parse(cleaned) as LocationSuggestions
+    return JSON.parse(cleaned)
   } catch {
-    // Claude returned something unparseable — return minimal fallback
-    return { alias: { value: address.split(',')[0].trim().slice(0, 60), confidence: 0.5 } }
+    return { alias: { value: address.split(',')[0].trim().slice(0, 60), confidence: 0.5, source: 'ai' } }
   }
 }
 
 export default async function handler(req: Request): Promise<Response> {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: CORS_HEADERS })
   }
@@ -181,20 +230,24 @@ export default async function handler(req: Request): Promise<Response> {
     )
   }
 
-  // Step 1: Fetch Places details (coords > place_id > text search)
-  let places: PlacesData | null = null
-  if (mapsKey) {
-    if (lat !== undefined && lng !== undefined) {
-      places = await findPlaceByCoords(lat, lng, mapsKey)
-    } else if (place_id) {
-      places = await fetchPlacesDetails(place_id, mapsKey)
-    } else {
-      places = await findPlaceByAddress(address, mapsKey)
-    }
-  }
+  const hasCoords = lat !== undefined && lng !== undefined
 
-  // Step 2: Ask Claude for alias + email
-  let claudeSuggestions: LocationSuggestions
+  // Run Places lookup + timezone in parallel
+  const [places, timezone] = await Promise.all([
+    mapsKey
+      ? hasCoords
+        ? findPlaceByCoords(lat!, lng!, mapsKey)
+        : place_id
+          ? fetchPlacesDetails(place_id, mapsKey)
+          : findPlaceByAddress(address, mapsKey)
+      : Promise.resolve(null),
+    mapsKey && hasCoords
+      ? fetchTimezone(lat!, lng!, mapsKey)
+      : Promise.resolve(null),
+  ])
+
+  // Claude for alias + email
+  let claudeSuggestions: Partial<LocationSuggestions>
   try {
     claudeSuggestions = await generateWithClaude(address, places, claudeKey)
   } catch (err) {
@@ -204,7 +257,6 @@ export default async function handler(req: Request): Promise<Response> {
     )
   }
 
-  // Step 3: Build final response, merging Places data with Claude output
   const result: LocationSuggestions = {
     alias: {
       value: claudeSuggestions.alias?.value ?? address.split(',')[0].trim().slice(0, 60),
@@ -213,16 +265,10 @@ export default async function handler(req: Request): Promise<Response> {
     },
   }
 
-  // Phone — from Places only
   if (places?.formatted_phone_number) {
-    result.phone = {
-      value: places.formatted_phone_number,
-      confidence: 0.95,
-      source: 'places',
-    }
+    result.phone = { value: places.formatted_phone_number, confidence: 0.95, source: 'places' }
   }
 
-  // Email — from Claude (inferred from website) or skip
   if (claudeSuggestions.email?.value) {
     result.email = {
       value: claudeSuggestions.email.value,
@@ -231,10 +277,9 @@ export default async function handler(req: Request): Promise<Response> {
     }
   }
 
-  // Time windows — from Places opening_hours.periods
   if (places?.opening_hours?.periods?.length) {
     const windows: TimeWindow[] = places.opening_hours.periods
-      .filter((p) => p.close) // skip 24h open entries without close
+      .filter((p) => p.close)
       .map((p) => ({
         start: formatTime(p.open.time),
         end: formatTime(p.close!.time),
@@ -242,8 +287,21 @@ export default async function handler(req: Request): Promise<Response> {
         source: 'places' as const,
       }))
 
-    if (windows.length > 0) {
-      result.time_windows = windows
+    if (windows.length > 0) result.time_windows = windows
+  }
+
+  if (timezone) {
+    result.timezone = { value: timezone, confidence: 0.99, source: 'places' }
+  }
+
+  if (places?.types?.length) {
+    const inferred = inferFromPlaceTypes(places.types)
+
+    if (inferred.stop_type) {
+      result.stop_type = { value: inferred.stop_type, confidence: 0.75, source: 'ai' }
+    }
+    if (inferred.service_time) {
+      result.service_time = { value: inferred.service_time, confidence: 0.65, source: 'ai' }
     }
   }
 
