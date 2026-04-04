@@ -3,6 +3,7 @@
   "outputDirectory": "dist",
   "routes": [
     { "src": "^/api/claude$", "dest": "/api/claude" },
+    { "src": "^/api/location-suggestions$", "dest": "/api/location-suggestions" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
