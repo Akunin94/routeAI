@@ -5,6 +5,7 @@
   "routes": [
     { "src": "^/api/claude$", "dest": "/api/claude" },
     { "src": "^/api/location-suggestions$", "dest": "/api/location-suggestions" },
+    { "src": "^/api/validate-alias$", "dest": "/api/validate-alias" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
