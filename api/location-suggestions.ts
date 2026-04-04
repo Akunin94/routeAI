@@ -71,6 +71,20 @@ async function findPlaceByAddress(address: string, apiKey: string): Promise<Plac
   return data.candidates[0]
 }
 
+async function findPlaceByCoords(lat: number, lng: number, apiKey: string): Promise<PlacesData | null> {
+  const fields = 'name,formatted_phone_number,website,opening_hours'
+  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&rankby=distance&type=establishment&fields=${encodeURIComponent(fields)}&key=${apiKey}`
+
+  const res = await fetch(url)
+  if (!res.ok) return null
+
+  const data = await res.json() as { status: string; results?: Array<PlacesData & { place_id: string }> }
+  if (data.status !== 'OK' || !data.results?.length) return null
+
+  // Get full details for the closest result
+  return fetchPlacesDetails(data.results[0].place_id!, apiKey)
+}
+
 async function generateWithClaude(
   address: string,
   places: PlacesData | null,
@@ -148,7 +162,7 @@ export default async function handler(req: Request): Promise<Response> {
     )
   }
 
-  let body: { address?: string; place_id?: string }
+  let body: { address?: string; place_id?: string; lat?: number; lng?: number }
   try {
     body = await req.json()
   } catch {
@@ -158,7 +172,7 @@ export default async function handler(req: Request): Promise<Response> {
     )
   }
 
-  const { address, place_id } = body
+  const { address, place_id, lat, lng } = body
 
   if (!address || typeof address !== 'string') {
     return new Response(
@@ -167,10 +181,12 @@ export default async function handler(req: Request): Promise<Response> {
     )
   }
 
-  // Step 1: Fetch Places details
+  // Step 1: Fetch Places details (coords > place_id > text search)
   let places: PlacesData | null = null
   if (mapsKey) {
-    if (place_id) {
+    if (lat !== undefined && lng !== undefined) {
+      places = await findPlaceByCoords(lat, lng, mapsKey)
+    } else if (place_id) {
       places = await fetchPlacesDetails(place_id, mapsKey)
     } else {
       places = await findPlaceByAddress(address, mapsKey)
