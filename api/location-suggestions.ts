@@ -86,33 +86,27 @@ async function findPlaceByAddress(address: string, apiKey: string): Promise<Plac
   return fetchPlacesDetails(placeId, apiKey)
 }
 
-async function findPlaceByCoords(address: string, lat: number, lng: number, apiKey: string): Promise<PlacesData | null> {
-  // nearbysearch to get candidates near coords, then pick one whose vicinity matches the address
-  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&rankby=distance&key=${apiKey}`
+async function findPlaceByCoords(_address: string, lat: number, lng: number, apiKey: string): Promise<PlacesData | null> {
+  // Search within 50m, pick the first result that has opening_hours in Details
+  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=50&rankby=prominence&key=${apiKey}`
   const res = await fetch(url)
   if (!res.ok) return null
 
   const data = await res.json() as {
     status: string
-    results?: Array<{ place_id: string; name: string; vicinity: string; types: string[] }>
+    results?: Array<{ place_id: string; name: string; types: string[] }>
   }
   if (data.status !== 'OK' || !data.results?.length) return null
 
-  // Normalize address for comparison: lowercase, strip punctuation
-  const normalize = (s: string) => s.toLowerCase().replace(/[.,#-]/g, '').replace(/\s+/g, ' ').trim()
-  const normalizedAddress = normalize(address)
+  // Try up to 3 closest results, return first one that has opening_hours.periods
+  const candidates = data.results.slice(0, 3)
+  for (const candidate of candidates) {
+    const details = await fetchPlacesDetails(candidate.place_id, apiKey)
+    if (details?.opening_hours?.periods?.length) return details
+  }
 
-  // Pick first result whose vicinity overlaps with address, skip pure street_address results
-  const match = data.results.find((r) => {
-    if (!r.types || r.types.every(t => t === 'street_address' || t === 'route')) return false
-    const normalizedVicinity = normalize(r.vicinity)
-    // Check if the street number + street name from address appears in vicinity
-    const addressParts = normalizedAddress.split(' ').slice(0, 3)
-    return addressParts.some(part => part.length > 2 && normalizedVicinity.includes(part))
-  })
-
-  if (!match) return null
-  return fetchPlacesDetails(match.place_id, apiKey)
+  // No match with hours — return first result anyway (for phone/alias/timezone)
+  return fetchPlacesDetails(candidates[0].place_id, apiKey)
 }
 
 async function fetchTimezone(lat: number, lng: number, apiKey: string): Promise<string | null> {
