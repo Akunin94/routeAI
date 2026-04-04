@@ -285,13 +285,8 @@ export default async function handler(req: Request): Promise<Response> {
     result.phone = { value: places.formatted_phone_number, confidence: 0.95, source: 'places' }
   }
 
-  if (claudeSuggestions.email?.value) {
-    result.email = {
-      value: claudeSuggestions.email.value,
-      confidence: claudeSuggestions.email.confidence ?? 0.7,
-      source: 'ai',
-    }
-  }
+  // Email — only from Places website field if it contains an email directly (rare), skip AI guessing
+  // (AI-guessed emails are unreliable and not verified)
 
   if (places?.opening_hours?.periods?.length) {
     const seen = new Set<string>()
@@ -317,16 +312,6 @@ export default async function handler(req: Request): Promise<Response> {
     result.timezone = { value: timezone, confidence: 0.99, source: 'places' }
   }
 
-  if (places?.types?.length) {
-    const inferred = inferFromPlaceTypes(places.types)
-
-    if (inferred.stop_type) {
-      result.stop_type = { value: inferred.stop_type, confidence: 0.75, source: 'ai' }
-    }
-    if (inferred.service_time) {
-      result.service_time = { value: inferred.service_time, confidence: 0.65, source: 'ai' }
-    }
-  }
 
   return new Response(JSON.stringify({
     ...result,
