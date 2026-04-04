@@ -22,8 +22,7 @@ interface PlacesData {
 }
 
 interface TimeWindow {
-  start: string
-  end: string
+  value: { start: string; end: string }
   confidence: number
   source: 'places' | 'ai'
 }
@@ -304,8 +303,7 @@ export default async function handler(req: Request): Promise<Response> {
       if (seen.has(key)) continue
       seen.add(key)
       windows.push({
-        start: formatTime(p.open.time),
-        end: formatTime(p.close.time),
+        value: { start: formatTime(p.open.time), end: formatTime(p.close.time) },
         confidence: 0.9,
         source: 'places',
       })
