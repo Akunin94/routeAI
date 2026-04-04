@@ -58,6 +58,19 @@ async function fetchPlacesDetails(placeId: string, apiKey: string): Promise<Plac
   return data.result
 }
 
+async function findPlaceByAddress(address: string, apiKey: string): Promise<PlacesData | null> {
+  const fields = 'name,formatted_phone_number,website,opening_hours'
+  const url = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(address)}&inputtype=textquery&fields=${encodeURIComponent(fields)}&key=${apiKey}`
+
+  const res = await fetch(url)
+  if (!res.ok) return null
+
+  const data = await res.json() as { status: string; candidates?: PlacesData[] }
+  if (data.status !== 'OK' || !data.candidates?.length) return null
+
+  return data.candidates[0]
+}
+
 async function generateWithClaude(
   address: string,
   places: PlacesData | null,
@@ -107,7 +120,8 @@ Output schema:
   const text = data.content.find((c) => c.type === 'text')?.text ?? '{}'
 
   try {
-    return JSON.parse(text) as LocationSuggestions
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
+    return JSON.parse(cleaned) as LocationSuggestions
   } catch {
     // Claude returned something unparseable — return minimal fallback
     return { alias: { value: address.split(',')[0].trim().slice(0, 60), confidence: 0.5 } }
@@ -153,10 +167,14 @@ export default async function handler(req: Request): Promise<Response> {
     )
   }
 
-  // Step 1: Fetch Places details (optional)
+  // Step 1: Fetch Places details
   let places: PlacesData | null = null
-  if (place_id && mapsKey) {
-    places = await fetchPlacesDetails(place_id, mapsKey)
+  if (mapsKey) {
+    if (place_id) {
+      places = await fetchPlacesDetails(place_id, mapsKey)
+    } else {
+      places = await findPlaceByAddress(address, mapsKey)
+    }
   }
 
   // Step 2: Ask Claude for alias + email
