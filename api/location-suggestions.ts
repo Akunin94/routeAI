@@ -67,31 +67,30 @@ async function fetchPlacesDetails(placeId: string, apiKey: string): Promise<Plac
   return data.result
 }
 
-async function findPlaceByAddress(address: string, apiKey: string): Promise<PlacesData | null> {
-  const fields = 'name,formatted_phone_number,website,opening_hours,types'
-  const url = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(address)}&inputtype=textquery&fields=${encodeURIComponent(fields)}&key=${apiKey}`
+async function findPlaceIdByAddress(address: string, apiKey: string, locationBias?: string): Promise<string | null> {
+  let url = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(address)}&inputtype=textquery&fields=place_id&key=${apiKey}`
+  if (locationBias) url += `&locationbias=${encodeURIComponent(locationBias)}`
 
   const res = await fetch(url)
   if (!res.ok) return null
 
-  const data = await res.json() as { status: string; candidates?: PlacesData[] }
+  const data = await res.json() as { status: string; candidates?: Array<{ place_id: string }> }
   if (data.status !== 'OK' || !data.candidates?.length) return null
 
-  return data.candidates[0]
+  return data.candidates[0].place_id
+}
+
+async function findPlaceByAddress(address: string, apiKey: string): Promise<PlacesData | null> {
+  const placeId = await findPlaceIdByAddress(address, apiKey)
+  if (!placeId) return null
+  return fetchPlacesDetails(placeId, apiKey)
 }
 
 async function findPlaceByCoords(address: string, lat: number, lng: number, apiKey: string): Promise<PlacesData | null> {
-  const fields = 'name,formatted_phone_number,website,opening_hours,types'
   const locationBias = `circle:100@${lat},${lng}`
-  const url = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(address)}&inputtype=textquery&fields=${encodeURIComponent(fields)}&locationbias=${encodeURIComponent(locationBias)}&key=${apiKey}`
-
-  const res = await fetch(url)
-  if (!res.ok) return null
-
-  const data = await res.json() as { status: string; candidates?: PlacesData[] }
-  if (data.status !== 'OK' || !data.candidates?.length) return null
-
-  return data.candidates[0]
+  const placeId = await findPlaceIdByAddress(address, apiKey, locationBias)
+  if (!placeId) return null
+  return fetchPlacesDetails(placeId, apiKey)
 }
 
 async function fetchTimezone(lat: number, lng: number, apiKey: string): Promise<string | null> {
