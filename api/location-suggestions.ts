@@ -2,20 +2,10 @@ export const config = {
   runtime: 'edge',
 }
 
-const ALLOWED_ORIGINS = new Set([
-  'https://routeml.com',
-  'https://www.routeml.com',
-  'http://localhost:5173',
-])
-
-function getCorsHeaders(origin: string | null): Record<string, string> {
-  const allowed = origin && ALLOWED_ORIGINS.has(origin) ? origin : 'https://routeml.com'
-  return {
-    'Access-Control-Allow-Origin': allowed,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Vary': 'Origin',
-  }
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
 }
 
 interface PlacesData {
@@ -125,16 +115,13 @@ Output schema:
 }
 
 export default async function handler(req: Request): Promise<Response> {
-  const origin = req.headers.get('Origin')
-  const cors = getCorsHeaders(origin)
-
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: cors })
+    return new Response(null, { status: 204, headers: CORS_HEADERS })
   }
 
   if (req.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405, headers: cors })
+    return new Response('Method Not Allowed', { status: 405, headers: CORS_HEADERS })
   }
 
   const claudeKey = process.env.CLAUDE_API_KEY
@@ -143,7 +130,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!claudeKey) {
     return new Response(
       JSON.stringify({ error: 'Server misconfiguration: CLAUDE_API_KEY is not set' }),
-      { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } },
+      { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
     )
   }
 
@@ -153,7 +140,7 @@ export default async function handler(req: Request): Promise<Response> {
   } catch {
     return new Response(
       JSON.stringify({ error: 'Invalid JSON body' }),
-      { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } },
+      { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
     )
   }
 
@@ -162,7 +149,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!address || typeof address !== 'string') {
     return new Response(
       JSON.stringify({ error: '"address" field is required' }),
-      { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } },
+      { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
     )
   }
 
@@ -179,7 +166,7 @@ export default async function handler(req: Request): Promise<Response> {
   } catch (err) {
     return new Response(
       JSON.stringify({ error: `Claude request failed: ${String(err)}` }),
-      { status: 502, headers: { ...cors, 'Content-Type': 'application/json' } },
+      { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
     )
   }
 
@@ -228,6 +215,6 @@ export default async function handler(req: Request): Promise<Response> {
 
   return new Response(JSON.stringify(result), {
     status: 200,
-    headers: { ...cors, 'Content-Type': 'application/json' },
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   })
 }
