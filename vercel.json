@@ -1,8 +1,28 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "headers": [
+    {
+      "source": "/api/location-suggestions",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "https://routeml.com" },
+        { "key": "Access-Control-Allow-Methods", "value": "POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
+      ]
+    }
+  ],
   "routes": [
     { "src": "^/api/claude$", "dest": "/api/claude" },
+    {
+      "src": "^/api/location-suggestions$",
+      "methods": ["OPTIONS"],
+      "headers": {
+        "Access-Control-Allow-Origin": "https://routeml.com",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+      },
+      "dest": "/api/location-suggestions"
+    },
     { "src": "^/api/location-suggestions$", "dest": "/api/location-suggestions" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
