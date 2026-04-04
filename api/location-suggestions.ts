@@ -306,7 +306,16 @@ export default async function handler(req: Request): Promise<Response> {
     }
   }
 
-  return new Response(JSON.stringify(result), {
+  return new Response(JSON.stringify({
+    ...result,
+    _debug: {
+      places_found: !!places,
+      places_name: places?.name ?? null,
+      has_opening_hours: !!places?.opening_hours,
+      periods_count: places?.opening_hours?.periods?.length ?? 0,
+      types: places?.types ?? null,
+    },
+  }), {
     status: 200,
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   })
