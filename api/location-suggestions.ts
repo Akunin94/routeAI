@@ -295,14 +295,22 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   if (places?.opening_hours?.periods?.length) {
-    const windows: TimeWindow[] = places.opening_hours.periods
-      .filter((p) => p.close)
-      .map((p) => ({
+    const seen = new Set<string>()
+    const windows: TimeWindow[] = []
+
+    for (const p of places.opening_hours.periods) {
+      if (!p.close) continue
+      const key = `${p.open.time}-${p.close.time}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      windows.push({
         start: formatTime(p.open.time),
-        end: formatTime(p.close!.time),
+        end: formatTime(p.close.time),
         confidence: 0.9,
-        source: 'places' as const,
-      }))
+        source: 'places',
+      })
+      if (windows.length === 2) break // R4m supports max 2 time windows
+    }
 
     if (windows.length > 0) result.time_windows = windows
   }
