@@ -80,16 +80,18 @@ async function findPlaceByAddress(address: string, apiKey: string): Promise<Plac
   return data.candidates[0]
 }
 
-async function findPlaceByCoords(lat: number, lng: number, apiKey: string): Promise<PlacesData | null> {
-  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&rankby=distance&type=establishment&key=${apiKey}`
+async function findPlaceByCoords(address: string, lat: number, lng: number, apiKey: string): Promise<PlacesData | null> {
+  const fields = 'name,formatted_phone_number,website,opening_hours,types'
+  const locationBias = `circle:100@${lat},${lng}`
+  const url = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(address)}&inputtype=textquery&fields=${encodeURIComponent(fields)}&locationbias=${encodeURIComponent(locationBias)}&key=${apiKey}`
 
   const res = await fetch(url)
   if (!res.ok) return null
 
-  const data = await res.json() as { status: string; results?: Array<{ place_id: string }> }
-  if (data.status !== 'OK' || !data.results?.length) return null
+  const data = await res.json() as { status: string; candidates?: PlacesData[] }
+  if (data.status !== 'OK' || !data.candidates?.length) return null
 
-  return fetchPlacesDetails(data.results[0].place_id, apiKey)
+  return data.candidates[0]
 }
 
 async function fetchTimezone(lat: number, lng: number, apiKey: string): Promise<string | null> {
@@ -236,7 +238,7 @@ export default async function handler(req: Request): Promise<Response> {
   const [places, timezone] = await Promise.all([
     mapsKey
       ? hasCoords
-        ? findPlaceByCoords(lat!, lng!, mapsKey)
+        ? findPlaceByCoords(address, lat!, lng!, mapsKey)
         : place_id
           ? fetchPlacesDetails(place_id, mapsKey)
           : findPlaceByAddress(address, mapsKey)
