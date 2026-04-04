@@ -21,20 +21,8 @@ interface PlacesData {
   }
 }
 
-interface TimeWindow {
-  value: { start: string; end: string }
-  confidence: number
-  source: 'places' | 'ai'
-}
-
 interface SuggestionField {
   value: string
-  confidence: number
-  source?: 'places' | 'ai'
-}
-
-interface NumberSuggestionField {
-  value: number
   confidence: number
   source?: 'places' | 'ai'
 }
@@ -42,15 +30,7 @@ interface NumberSuggestionField {
 interface LocationSuggestions {
   alias: SuggestionField
   phone?: SuggestionField
-  email?: SuggestionField
-  time_windows?: TimeWindow[]
   timezone?: SuggestionField
-  service_time?: NumberSuggestionField
-  stop_type?: SuggestionField
-}
-
-function formatTime(hhmm: string): string {
-  return `${hhmm.slice(0, 2)}:${hhmm.slice(2)}`
 }
 
 async function fetchPlacesDetails(placeId: string, apiKey: string): Promise<PlacesData | null> {
@@ -119,38 +99,6 @@ async function fetchTimezone(lat: number, lng: number, apiKey: string): Promise<
   if (data.status !== 'OK' || !data.timeZoneId) return null
 
   return data.timeZoneId
-}
-
-// Map Google Places types to R4m stop types and estimated service time (seconds)
-function inferFromPlaceTypes(types: string[]): { stop_type?: string; service_time?: number } {
-  const typeSet = new Set(types)
-
-  if (typeSet.has('restaurant') || typeSet.has('cafe') || typeSet.has('food')) {
-    return { stop_type: 'DELIVERY', service_time: 900 } // 15 min
-  }
-  if (typeSet.has('grocery_or_supermarket') || typeSet.has('supermarket')) {
-    return { stop_type: 'DELIVERY', service_time: 1200 } // 20 min
-  }
-  if (typeSet.has('hospital') || typeSet.has('doctor') || typeSet.has('health')) {
-    return { stop_type: 'SERVICE', service_time: 2700 } // 45 min
-  }
-  if (typeSet.has('store') || typeSet.has('shopping_mall') || typeSet.has('department_store')) {
-    return { stop_type: 'DELIVERY', service_time: 900 }
-  }
-  if (typeSet.has('warehouse') || typeSet.has('storage')) {
-    return { stop_type: 'PICKUP', service_time: 1800 } // 30 min
-  }
-  if (typeSet.has('school') || typeSet.has('university')) {
-    return { stop_type: 'DELIVERY', service_time: 600 } // 10 min
-  }
-  if (typeSet.has('gas_station') || typeSet.has('car_repair')) {
-    return { stop_type: 'SERVICE', service_time: 1200 }
-  }
-  if (typeSet.has('lodging') || typeSet.has('hotel')) {
-    return { stop_type: 'DELIVERY', service_time: 600 }
-  }
-
-  return {}
 }
 
 async function generateWithClaude(
@@ -287,26 +235,6 @@ export default async function handler(req: Request): Promise<Response> {
 
   // Email — only from Places website field if it contains an email directly (rare), skip AI guessing
   // (AI-guessed emails are unreliable and not verified)
-
-  if (places?.opening_hours?.periods?.length) {
-    const seen = new Set<string>()
-    const windows: TimeWindow[] = []
-
-    for (const p of places.opening_hours.periods) {
-      if (!p.close) continue
-      const key = `${p.open.time}-${p.close.time}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      windows.push({
-        value: { start: formatTime(p.open.time), end: formatTime(p.close.time) },
-        confidence: 0.9,
-        source: 'places',
-      })
-      if (windows.length === 2) break // R4m supports max 2 time windows
-    }
-
-    if (windows.length > 0) result.time_windows = windows
-  }
 
   if (timezone) {
     result.timezone = { value: timezone, confidence: 0.99, source: 'places' }
