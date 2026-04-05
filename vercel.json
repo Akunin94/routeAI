@@ -6,6 +6,7 @@
     { "src": "^/api/claude$", "dest": "/api/claude" },
     { "src": "^/api/location-suggestions$", "dest": "/api/location-suggestions" },
     { "src": "^/api/validate-alias$", "dest": "/api/validate-alias" },
+    { "src": "^/api/check-duplicate$", "dest": "/api/check-duplicate" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
