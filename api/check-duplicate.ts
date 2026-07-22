@@ -81,7 +81,7 @@ Be conservative — only flag high-confidence duplicates.`
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-sonnet-5',
       max_tokens: 128,
       system: systemPrompt,
       messages: [{

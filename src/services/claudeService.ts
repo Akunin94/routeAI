@@ -9,7 +9,7 @@ export async function sendMessageToClaude(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: (import.meta.env.VITE_CLAUDE_MODEL ?? 'claude-haiku-4-5-20251001').trim(),
+      model: (import.meta.env.VITE_CLAUDE_MODEL ?? 'claude-sonnet-5').trim(),
       max_tokens: 1024,
       stream: true,
       system: systemPrompt,
