@@ -55,6 +55,9 @@ export const useWaypointStore = defineStore('waypoints', () => {
   function reorderWaypoints(orderedIds: string[]) {
     const map = new Map(waypoints.value.map(w => [w.id, w]))
     const reordered = orderedIds.map(id => map.get(id)).filter((w): w is Waypoint => !!w)
+    // Only apply a full, valid permutation — otherwise a hallucinated or partial
+    // ID list from the AI would silently drop stops or wipe the whole route.
+    if (reordered.length !== waypoints.value.length) return
     waypoints.value = reordered
     _recalculateOrder()
   }

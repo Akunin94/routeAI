@@ -11,6 +11,10 @@ export async function sendMessageToClaude(
     body: JSON.stringify({
       model: (import.meta.env.VITE_CLAUDE_MODEL ?? 'claude-sonnet-5').trim(),
       max_tokens: 1024,
+      // Sonnet 5 runs adaptive thinking by default, which eats the token budget
+      // and can truncate the trailing JSON suggestion block. Disable it for this
+      // short, structured-output call.
+      thinking: { type: 'disabled' },
       stream: true,
       system: systemPrompt,
       messages: messages
@@ -29,15 +33,21 @@ export async function sendMessageToClaude(
 
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
+  let buffer = ''
 
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
 
-    const lines = decoder.decode(value, { stream: true }).split('\n')
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    // Keep the last element — it may be an incomplete line split across reads.
+    buffer = lines.pop() ?? ''
+
     for (const line of lines) {
-      if (!line.startsWith('data: ')) continue
-      const data = line.slice(6).trim()
+      const trimmed = line.trim()
+      if (!trimmed.startsWith('data:')) continue
+      const data = trimmed.slice(5).trim()
       if (data === '[DONE]') return
 
       try {

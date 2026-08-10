@@ -136,6 +136,7 @@ export function useRouteOptimizer() {
 
   /** Triggered by the "Optimize Route" button */
   async function optimizeRoute() {
+    if (aiStore.isStreaming) return
     if (!waypointStore.hasEnoughWaypoints) return
     aiStore.addMessage(
       'user',
