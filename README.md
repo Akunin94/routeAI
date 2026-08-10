@@ -5,7 +5,7 @@
 ## Screenshots
 <img width="2294" height="1320" alt="image" src="https://github.com/user-attachments/assets/0044907b-c4bd-498c-aeaf-8c4ca2ae7d5f" />
 <img width="2294" height="1301" alt="image" src="https://github.com/user-attachments/assets/8ed41b33-9b2e-4ad0-abf4-e65a444a6857" />
-<img width="973" height="894" alt="image" src="https://github.com/user-attachments/assets/931bd1f0-c0be-409d-bd1e-64b7bf6162ad" />
+<img width="2294" height="1306" alt="image" src="https://github.com/user-attachments/assets/595678e5-7b4c-438f-b61a-42025982da05" />
 
 
 A web app for multi-stop route planning with an AI assistant powered by Claude. Supports drag-and-drop editing, traffic-aware ETAs, export/import, and shareable links.
